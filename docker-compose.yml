@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # ----------------------------------------
+  # 1. n8n (Attacker + Orchestrator)
+  # ----------------------------------------
+  n8n:
+    build: .  # สร้างจาก Dockerfile ที่เราทำไว้
+    container_name: n8n-secops
+    restart: always
+    ports:
+      - "${N8N_PORT}:${N8N_PORT}"
+    environment:
+      - N8N_BASIC_AUTH_ACTIVE=true
+      - N8N_BASIC_AUTH_USER=${N8N_USER}
+      - N8N_BASIC_AUTH_PASSWORD=${N8N_PASS}
+      - N8N_HOST=${N8N_HOST}
+      - N8N_PORT=${N8N_PORT}
+      - N8N_PROTOCOL=http
+      # ถ้าใช้ Tunnel แนะนำให้แก้ WEBHOOK_URL ใน .env เป็น Domain ของ Cloudflare
+      - WEBHOOK_URL=${WEBHOOK_URL} 
+      - DB_TYPE=postgresdb
+      - DB_POSTGRESDB_DATABASE=${DB_NAME}
+      - DB_POSTGRESDB_HOST=postgres
+      - DB_POSTGRESDB_PORT=5432
+      - DB_POSTGRESDB_USER=${DB_USER}
+      - DB_POSTGRESDB_PASSWORD=${DB_PASS}
+      - N8N_ENFORCE_SETTINGS_FILE_PERMISSIONS=true
+      - GENERIC_TIMEZONE=Asia/Bangkok
+    volumes:
+      - n8n_data:/home/node/.n8n
+    depends_on:
+      - postgres
+    networks:
+      - secops_net
+
+  # ----------------------------------------
+  # 2. Victim App (เหยื่อ)
+  # ----------------------------------------
+  victim-app:
+    image: nginx:alpine
+    container_name: victim-app
+    restart: always
+    volumes:
+      # เอาไฟล์ความลับไปวางไว้หน้าบ้าน Web Server
+      - ./vulnerable_data:/usr/share/nginx/html
+    networks:
+      - secops_net
+
+  # ----------------------------------------
+  # 3. Database
+  # ----------------------------------------
+  postgres:
+    image: postgres:15
+    container_name: postgres-db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASS}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - secops_net
+
+  # ----------------------------------------
+  # 4. Cloudflare Tunnel (เพิ่มใหม่)
+  # ----------------------------------------
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared-tunnel
+    restart: always
+    # ดึง Token จากไฟล์ .env
+    command: tunnel --no-autoupdate run --token ${CF_TUNNEL_TOKEN}
+    networks:
+      - secops_net
+
+volumes:
+  n8n_data:
+  postgres_data:
+
+networks:
+  secops_net:
+    driver: bridge
