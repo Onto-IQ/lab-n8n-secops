@@ -1,0 +1,50 @@
+{
+    "name": "Kali Executor Tool",
+    "nodes": [
+        {
+            "parameters": {},
+            "id": "trigger",
+            "name": "Workflow Trigger",
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1,
+            "position": [
+                100,
+                200
+            ]
+        },
+        {
+            "parameters": {
+                "action": "executeCommand",
+                "command": "={{ $json.query }}",
+                "hostname": "kali-linux"
+            },
+            "id": "ssh",
+            "name": "SSH Kali",
+            "type": "n8n-nodes-base.ssh",
+            "typeVersion": 1,
+            "position": [
+                300,
+                200
+            ],
+            "credentials": {
+                "sshPassword": {
+                    "id": "SSH_CREDENTIAL_ID",
+                    "name": "Kali Root"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Workflow Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "SSH Kali",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    }
+}

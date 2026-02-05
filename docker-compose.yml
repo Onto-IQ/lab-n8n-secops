@@ -5,7 +5,9 @@ services:
   # 1. n8n (Attacker + Orchestrator)
   # ----------------------------------------
   n8n:
-    build: .  # สร้างจาก Dockerfile ที่เราทำไว้
+    build:
+      context: .
+      dockerfile: Dockerfile.n8n # สร้างจาก Dockerfile ที่เราทำไว้
     container_name: n8n-secops
     restart: always
     ports:
@@ -18,7 +20,7 @@ services:
       - N8N_PORT=${N8N_PORT}
       - N8N_PROTOCOL=http
       # ถ้าใช้ Tunnel แนะนำให้แก้ WEBHOOK_URL ใน .env เป็น Domain ของ Cloudflare
-      - WEBHOOK_URL=${WEBHOOK_URL} 
+      - WEBHOOK_URL=${WEBHOOK_URL}
       - DB_TYPE=postgresdb
       - DB_POSTGRESDB_DATABASE=${DB_NAME}
       - DB_POSTGRESDB_HOST=postgres
@@ -64,7 +66,19 @@ services:
       - secops_net
 
   # ----------------------------------------
-  # 4. Cloudflare Tunnel (เพิ่มใหม่)
+  # 4. Kali Linux (Attack Simulation)
+  # ----------------------------------------
+  kali:
+    build:
+      context: .
+      dockerfile: Dockerfile.kali
+    container_name: kali-linux
+    restart: always
+    networks:
+      - secops_net
+
+  # ----------------------------------------
+  # 5. Cloudflare Tunnel (เพิ่มใหม่)
   # ----------------------------------------
   cloudflared:
     image: cloudflare/cloudflared:latest
@@ -75,9 +89,30 @@ services:
     networks:
       - secops_net
 
+  # ----------------------------------------
+  # 6. OWASP Juice Shop (Victim)
+  # ----------------------------------------
+  juice-shop:
+    image: bkimminich/juice-shop
+    container_name: juice-shop-victim
+    restart: always
+    networks:
+      - secops_net
+
+  # ----------------------------------------
+  # 7. Metasploitable 2 (Victim)
+  # ----------------------------------------
+  metasploitable:
+    image: tleemcjr/metasploitable2
+    container_name: metasploitable-victim
+    restart: always
+    networks:
+      - secops_net
+
 volumes:
   n8n_data:
   postgres_data:
+
 
 networks:
   secops_net:

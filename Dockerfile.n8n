@@ -1,0 +1,5 @@
+FROM n8nio/n8n:latest
+
+# Note: n8nio/n8n:latest is now a hardened Alpine image without apk.
+# Basic tools like bash and wget are already included.
+# Advanced security tools are now managed via the Kali Linux container.

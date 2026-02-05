@@ -1,0 +1,200 @@
+{
+  "name": "Advanced SecOps AI Pipeline",
+  "nodes": [
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "trigger",
+      "name": "Trigger",
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a Red Team SecOps Orchestrator. Execute comprehensive security assessments using the Kali CLI tool. Start with Nmap, then perform targeted service analysis. Final output MUST be strictly JSON."
+        },
+        "promptType": "auto"
+      },
+      "id": "orchestrator",
+      "name": "Orchestrator Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        250,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash-latest"
+      },
+      "id": "gemini1",
+      "name": "Gemini 1",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        250,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "description": "Execute any bash command on the Kali Linux terminal. Parameter: query (string)",
+        "source": "database",
+        "workflowId": "kyIfEMtAYWubjxWY"
+      },
+      "id": "kali_tool",
+      "name": "Kali Executor Tool",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [
+        450,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{ \"target\": \"127.0.0.1\", \"assessment_summary\": \"Summary\", \"actions_taken\": [\"cmd1\"], \"detailed_findings\": [ { \"service\": \"http\", \"port\": 80, \"finding\": \"Found old Apache\", \"severity\": \"High\" } ], \"raw_logs\": \"...\" }",
+        "schemaType": "fromJson"
+      },
+      "id": "parser",
+      "name": "JSON Parser",
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        400,
+        50
+      ]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output }}",
+        "options": {
+          "systemMessage": "You are a Senior Cyber-Security Reporter. Take the JSON scan findings and generate an extremely professional and beautiful Markdown security report. Use emojis for risks and status. Structure clearly."
+        }
+      },
+      "id": "reporter",
+      "name": "Reporter Agent",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        700,
+        240
+      ]
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-1.5-flash-latest"
+      },
+      "id": "gemini2",
+      "name": "Gemini 2",
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        700,
+        450
+      ]
+    },
+    {
+      "parameters": {
+        "authentication": "webhook",
+        "content": "={{ $json.output }}",
+        "operation": "sendLegacy"
+      },
+      "id": "discord",
+      "name": "Discord Alert",
+      "type": "n8n-nodes-base.discord",
+      "typeVersion": 2,
+      "position": [
+        1000,
+        240
+      ]
+    }
+  ],
+  "connections": {
+    "Trigger": {
+      "main": [
+        [
+          {
+            "node": "Orchestrator Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Orchestrator Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Kali Executor Tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "Orchestrator Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "JSON Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Orchestrator Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Orchestrator Agent": {
+      "main": [
+        [
+          {
+            "node": "Reporter Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gemini 2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Reporter Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reporter Agent": {
+      "main": [
+        [
+          {
+            "node": "Discord Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

@@ -30,3 +30,7 @@ tmp/
 temp/
 
 
+
+# Lab specific tools and configs
+sync-n8n-skills.ps1
+claude_config_copy.json
