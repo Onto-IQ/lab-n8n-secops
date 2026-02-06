@@ -1,0 +1,45 @@
+# ============================================
+# n8n SecOps Lab - Environment Variables
+# ============================================
+# คัดลอกไฟล์นี้เป็น .env และกรอกค่าตามต้องการ
+# cp .env.example .env
+
+# --------------------------------------------
+# n8n Configuration
+# --------------------------------------------
+# Host ที่ n8n จะรัน (ใช้ localhost สำหรับ local development)
+N8N_HOST=n8n07.xyz.academy
+
+# Port ที่ n8n จะรัน (default: 5678)
+N8N_PORT=5678
+
+# Username สำหรับเข้าสู่ระบบ n8n
+N8N_USER=admin
+
+# Password สำหรับเข้าสู่ระบบ n8n (เปลี่ยนเป็นรหัสผ่านที่ปลอดภัย)
+N8N_PASS=Pa55w.rd
+
+# Webhook URL สำหรับ n8n (ใช้ localhost สำหรับ local development)
+# หากใช้ Cloudflare Tunnel ให้เปลี่ยนเป็น Domain ที่ Cloudflare ให้มา
+WEBHOOK_URL=https://n8n07.xyz.academy
+
+# --------------------------------------------
+# Database Configuration
+# --------------------------------------------
+# ชื่อ Database
+DB_NAME=n8n
+
+# Username สำหรับ PostgreSQL
+DB_USER=n8n_user
+
+# Password สำหรับ PostgreSQL (เปลี่ยนเป็นรหัสผ่านที่ปลอดภัย)
+DB_PASS=Pa55w.rd
+
+# --------------------------------------------
+# Cloudflare Tunnel (Optional)
+# --------------------------------------------
+# Token สำหรับ Cloudflare Tunnel (เว้นว่างไว้ได้หากไม่ใช้)
+# หากต้องการเปิด n8n ผ่าน Internet โดยไม่ต้องเปิด Port
+# สามารถใช้ Cloudflare Tunnel ได้
+# วิธีสร้าง Token: https://developers.cloudflare.com/cloudflare-one/connections/connect-apps/create-tunnel/
+CF_TUNNEL_TOKEN=<Your CF Tunnel>
