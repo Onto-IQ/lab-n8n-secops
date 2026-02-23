@@ -1,6 +1,10 @@
-# WebSecScan Pro - ระบบสแกนความปลอดภัยเว็บด้วย Multi-Agent AI (ฉบับอัปเดต 2026)
+# Workflow 2: WebSecScan Pro (Workflow Tools Edition)
 
-เอกสารนี้อธิบายสถาปัตยกรรมและการใช้งานของระบบ **WebSecScan Pro** ซึ่งเป็นระบบ Multi-Agent AI ที่ทำงานบน n8n เพื่อตรวจสอบความปลอดภัยของเว็บไซต์ตามมาตรฐาน OWASP ASVS
+เอกสารนี้อธิบายสถาปัตยกรรมและการใช้งานของระบบ **WebSecScan Pro** ในโฟลเดอร์ `Workflow_2/` ซึ่งเป็นระบบ Multi-Agent AI ที่ทำงานบน n8n เพื่อตรวจสอบความปลอดภัยของเว็บไซต์ตามมาตรฐาน OWASP ASVS
+
+**ไฟล์ในโฟลเดอร์นี้:**
+- `WebSecScan Pro - Workflow Tools Edition.json` - Main Orchestrator Workflow
+- `WebSec_SubAgent_Worker.json` - Sub-Agent Worker สำหรับประมวลผลแบบขนาน
 
 ## 1. ภาพรวมสถาปัตยกรรม (Architecture Overview)
 

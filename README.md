@@ -28,30 +28,42 @@
 
 ```
 ┌─────────────────┐
-│   n8n-secops    │  ← Orchestration Platform + Security Tools
+│   n8n-secops    │  ← Orchestration Platform
 │   (Attacker)    │
 └────────┬────────┘
          │
          ├───┐
          │   │
-    ┌────▼───▼────┐
-    │  victim-app │  ← Vulnerable Target (Nginx)
-    └─────────────┘
+    ┌────▼───▼────────────────────────────────────┐
+    │           Vulnerable Targets                  │
+    │  ┌─────────────┐  ┌──────────────┐          │
+    │  │  victim-app │  │  juice-shop  │          │
+    │  │   (Nginx)   │  │  (OWASP)     │          │
+    │  └─────────────┘  └──────────────┘          │
+    │  ┌─────────────────────────────────┐        │
+    │  │      metasploitable-victim      │        │
+    │  └─────────────────────────────────┘        │
+    └─────────────────────────────────────────────┘
          │
-    ┌────▼────┐
-    │ postgres│  ← Database for n8n
-    └─────────┘
+    ┌────▼────┐     ┌──────────────┐
+    │ postgres│     │ kali-linux   │ ← Security Tools
+    │ (DB)    │     │ (Executor)   │   (Nmap, Nuclei, Metasploit)
+    └─────────┘     └──────────────┘
+         │
+    ┌────▼────────┐
+    │ cloudflared │ ← Cloudflare Tunnel (Optional)
+    └─────────────┘
 ```
 
 ---
 
 ## ✨ คุณสมบัติหลัก
 
-- **🔧 Security Tools Integration**: รองรับ Nuclei v3.x และ Nmap พร้อมใช้งานทันที
+- **🔧 Security Tools Integration**: Nuclei, Nmap, Metasploit พร้อมใช้งานใน Kali Container
 - **🤖 AI-Powered Automation**: ใช้ OpenAI เพื่อแปลง Natural Language เป็น Security Commands
-- **📱 Line Messaging Integration**: รับคำสั่งและส่งรายงานผ่าน Line Bot
-- **🐳 Docker-Based Environment**: รันได้บนทุก Platform (Windows/Linux/macOS, ARM64/AMD64)
-- **🔒 Isolated Network**: ใช้ Docker Network เพื่อแยกระบบทดสอบออกจากระบบจริง
+- ** Docker-Based Environment**: รันได้บนทุก Platform (Windows/Linux/macOS, ARM64/AMD64)
+- **🔒 Isolated Network**: ใช้ Docker Network (`secops_net`) แยกระบบทดสอบออกจากระบบจริง
+- **🎯 Multiple Targets**: รองรับการทดสอบบน victim-app, OWASP Juice Shop, และ Metasploitable2
 - **📊 Automated Reporting**: สร้างรายงานสรุปผลการสแกนอัตโนมัติด้วย AI
 
 ---
@@ -87,10 +99,20 @@
 n8n-secops-lab/
 ├── .env                      # Environment Variables (ไม่ถูก commit)
 ├── .env.example              # ตัวอย่าง Environment Variables
-├── Dockerfile                # Custom n8n Image with Security Tools
-├── docker-compose.yml        # Docker Compose Configuration
-├── secops-workflow.json      # SecOps Demo Workflow
-├── WORKFLOW_GUIDE.md         # คู่มือการใช้งาน Workflow
+├── Dockerfile.n8n           # Custom n8n Image
+├── Dockerfile.kali          # Kali Linux with Security Tools
+├── docker-compose.yml        # Docker Compose Configuration (7 services)
+├── workflows/                # Additional workflow files
+│   ├── Advanced_SecOps_AI_Pipeline.json
+│   └── Kali_Executor_Tool.json
+├── Workflow_1/               # SecOps Workflow Set 1
+│   ├── Advanced SecOps AI Pipeline.json
+│   ├── Kali Executor Tool.json
+│   └── README.md
+├── Workflow_2/               # SecOps Workflow Set 2
+│   ├── WebSecScan Pro - Workflow Tools Edition.json
+│   ├── WebSec_SubAgent_Worker.json
+│   └── README.md
 ├── README.md                 # เอกสารนี้
 └── vulnerable_data/          # Vulnerable Target Data
     └── .env                  # ไฟล์จำลองที่เปิดเผย (สำหรับ Demo)
@@ -98,9 +120,12 @@ n8n-secops-lab/
 
 ### คำอธิบายไฟล์สำคัญ
 
-- **`Dockerfile`**: สร้าง Custom n8n Image ที่ติดตั้ง Nuclei, Nmap, และ Tools อื่นๆ
-- **`docker-compose.yml`**: กำหนด Services ทั้งหมด (n8n, victim-app, postgres, cloudflared)
-- **`secops-workflow.json`**: Workflow ตัวอย่างสำหรับ SecOps Demo
+- **`Dockerfile.n8n`**: สร้าง Custom n8n Image
+- **`Dockerfile.kali`**: สร้าง Kali Linux Container พร้อม Security Tools (Nmap, Nuclei, Metasploit)
+- **`docker-compose.yml`**: กำหนด Services ทั้งหมด 7 ตัว (n8n, victim-app, postgres, kali, cloudflared, juice-shop, metasploitable)
+- **`Workflow_1/`**: Workflow ชุดที่ 1 - Advanced SecOps AI Pipeline + Kali Executor
+- **`Workflow_2/`**: Workflow ชุดที่ 2 - WebSecScan Pro + SubAgent Worker
+- **`workflows/`**: Workflow files สำรอง
 - **`vulnerable_data/.env`**: ไฟล์จำลองที่เปิดเผยเพื่อใช้ในการทดสอบ
 
 ---
@@ -129,7 +154,11 @@ cp .env.example .env
 | `N8N_USER` | Username สำหรับเข้าสู่ระบบ n8n | `admin` |
 | `N8N_PASS` | Password สำหรับเข้าสู่ระบบ n8n | `your_secure_password` |
 | `N8N_PORT` | Port สำหรับ n8n Web UI | `5678` |
+| `N8N_HOST` | Host สำหรับ n8n | `localhost` |
+| `WEBHOOK_URL` | Webhook URL (สำหรับ Cloudflare Tunnel) | `http://localhost:5678` |
+| `DB_USER` | Username สำหรับ PostgreSQL | `n8n` |
 | `DB_PASS` | Password สำหรับ PostgreSQL | `your_db_password` |
+| `DB_NAME` | Database name | `n8n` |
 | `CF_TUNNEL_TOKEN` | Cloudflare Tunnel Token (Optional) | _(เว้นว่างได้)_ |
 
 > **⚠️ คำเตือน**: ไฟล์ `.env` จะไม่ถูก commit ขึ้น Repository เพื่อความปลอดภัย
@@ -186,8 +215,14 @@ docker-compose ps
 #### Import Workflow
 
 1. คลิก **Workflows** → **Import from File**
-2. เลือกไฟล์ `secops-workflow.json`
+2. เลือกไฟล์ workflow จากโฟลเดอร์:
+   - `Workflow_1/Advanced SecOps AI Pipeline.json`
+   - `Workflow_1/Kali Executor Tool.json`
+   - `Workflow_2/WebSecScan Pro - Workflow Tools Edition.json`
+   - `Workflow_2/WebSec_SubAgent_Worker.json`
 3. Workflow จะถูก Import เข้ามาในระบบ
+
+**หมายเหตุ**: ไฟล์ในโฟลเดอร์ `workflows/` เป็นรูปแบบ snake_case เช่น `Advanced_SecOps_AI_Pipeline.json`
 
 #### Activate Workflow
 
@@ -197,20 +232,34 @@ docker-compose ps
 
 ### คำสั่งที่ใช้บ่อย
 
+#### เข้าใช้งาน Kali Linux Container
+
+```bash
+# SSH เข้า Kali Container (จาก n8n container)
+docker exec -it n8n-secops ssh root@kali-linux
+# Password: kali
+
+# หรือเข้าตรงผ่าน Docker Exec
+docker exec -it kali-linux bash
+```
+
 #### อัปเดต Nuclei Templates
 
 ```bash
-docker exec -it n8n-secops nuclei -update-templates
+docker exec -it kali-linux nuclei -update-templates
 ```
 
 #### ตรวจสอบ Version ของ Tools
 
 ```bash
 # ตรวจสอบ Nuclei Version
-docker exec -it n8n-secops nuclei -version
+docker exec -it kali-linux nuclei -version
 
 # ตรวจสอบ Nmap Version
-docker exec -it n8n-secops nmap --version
+docker exec -it kali-linux nmap --version
+
+# ตรวจสอบ Metasploit
+docker exec -it kali-linux msfconsole --version
 ```
 
 #### ทดสอบการเชื่อมต่อ
@@ -218,52 +267,92 @@ docker exec -it n8n-secops nmap --version
 ```bash
 # ทดสอบการเชื่อมต่อไปยัง victim-app
 docker exec -it n8n-secops curl http://victim-app/.env
+
+# ทดสอบ juice-shop
+docker exec -it n8n-secops curl http://juice-shop-victim:3000
+
+# ทดสอบ metasploitable
+docker exec -it kali-linux ping -c 3 metasploitable-victim
 ```
 
 ### ตัวอย่างคำสั่ง Security Scan
 
-#### Nmap Scan
+#### Nmap Scan (บน Kali Container)
 
 ```bash
 # Fast Scan
-nmap -F -T4 victim-app
+docker exec -it kali-linux nmap -F -T4 victim-app
 
 # Full Scan with Service Detection
-nmap -sV -sC victim-app
+docker exec -it kali-linux nmap -sV -sC victim-app
 
 # Scan Specific Ports
-nmap -p 80,443,8080 victim-app
+docker exec -it kali-linux nmap -p 80,443,8080 victim-app
+
+# Scan Multiple Targets
+docker exec -it kali-linux nmap -F juice-shop-victim metasploitable-victim
 ```
 
-#### Nuclei Scan
+#### Nuclei Scan (บน Kali Container)
 
 ```bash
 # Basic Scan
-nuclei -u http://victim-app -silent
+docker exec -it kali-linux nuclei -u http://victim-app -silent
 
 # Scan with Specific Tags
-nuclei -u http://victim-app -tags exposure -silent
+docker exec -it kali-linux nuclei -u http://victim-app -tags exposure -silent
 
 # JSON Output
-nuclei -u http://victim-app -json -silent
+docker exec -it kali-linux nuclei -u http://victim-app -json -silent
+
+# Scan juice-shop
+docker exec -it kali-linux nuclei -u http://juice-shop-victim:3000 -silent
 ```
 
-> **💡 เคล็ดลับ**: ใน n8n ให้ใช้ `http://victim-app` แทน `localhost` เพราะ Container อยู่ใน Network เดียวกัน
+> **💡 เคล็ดลับ**: ใน n8n ให้ใช้ชื่อ Container เป็น hostname เช่น `victim-app`, `juice-shop-victim`, `metasploitable-victim` เพราะอยู่ใน Docker Network เดียวกัน
 
 ---
 
-## 🔄 SecOps Demo Workflow
+## 🔄 SecOps Demo Workflows
 
-### ภาพรวม Workflow
+โปรเจกต์นี้มี Workflow ตัวอย่าง 2 ชุดในโฟลเดอร์ `Workflow_1/` และ `Workflow_2/`:
 
-Workflow ตัวอย่าง (`secops-workflow.json`) แสดงการใช้งาน AI-Powered Security Automation ที่สามารถ:
+### Workflow 1: Advanced SecOps AI Pipeline
 
-1. **รับคำสั่ง Natural Language** ผ่าน Line Messaging API
-2. **แปลงคำสั่งเป็น Nmap Command** ด้วย AI
-3. **สแกน Ports** และ Parse ผลลัพธ์
+**ไฟล์**: `Workflow_1/Advanced SecOps AI Pipeline.json`
+
+Workflow ตัวอย่างที่แสดงการใช้งาน AI-Powered Security Automation:
+
+1. **รับคำสั่ง Natural Language** ผ่าน Webhook หรือ Chat
+2. **แปลงคำสั่งเป็น Security Commands** ด้วย AI
+3. **สแกน Ports** ด้วย Nmap และ Parse ผลลัพธ์
 4. **เตรียม Targets** สำหรับ Nuclei อัตโนมัติ
 5. **สแกนช่องโหว่** ด้วย Nuclei
-6. **สร้างรายงาน** ด้วย AI และส่งกลับผ่าน Line
+6. **สร้างรายงาน** ด้วย AI
+
+**รายละเอียดเพิ่มเติม**: ดูที่ `Workflow_1/README.md`
+
+### Workflow 2: WebSecScan Pro
+
+**ไฟล์**: `Workflow_2/WebSecScan Pro - Workflow Tools Edition.json`
+
+Workflow สำหรับ Web Security Scanning ด้วย SubAgent Worker:
+
+- **Multi-target Scanning**: รองรับการสแกนหลายเป้าหมายพร้อมกัน
+- **SubAgent Pattern**: ใช้ Worker Node สำหรับประมวลผลแบบขนาน
+- **Automated Reporting**: สร้างรายงานรวมผลการสแกน
+
+**รายละเอียดเพิ่มเติม**: ดูที่ `Workflow_2/README.md`
+
+### Kali Executor Tool
+
+**ไฟล์**: `Workflow_1/Kali Executor Tool.json` และ `workflows/Kali_Executor_Tool.json`
+
+Workflow สำหรับ Execute Security Commands บน Kali Linux Container ผ่าน SSH:
+
+- รันคำสั่ง Nmap, Nuclei, Metasploit บน Kali Container
+- รองรับการทำงานผ่าน SSH Connection
+- เก็บผลลัพธ์กลับมาประมวลผลใน n8n
 
 ### ฟีเจอร์หลัก
 
@@ -272,28 +361,9 @@ Workflow ตัวอย่าง (`secops-workflow.json`) แสดงการ
 | **Natural Language Processing** | รับคำสั่งภาษาไทย/อังกฤษและแปลงเป็น Security Commands |
 | **Intelligent Port Detection** | ตรวจจับ Ports ที่เปิดและสร้าง URL Targets อัตโนมัติ |
 | **Automated Vulnerability Scanning** | สแกนช่องโหว่ด้วย Nuclei (focus: exposure tags) |
-| **AI-Powered Reporting** | สร้างรายงานสรุปผลการสแกนเป็นภาษาไทย |
-| **Line Bot Integration** | ส่งและรับข้อความผ่าน Line Messenger |
-
-### ตัวอย่างการใช้งาน
-
-ส่งข้อความผ่าน Line Bot:
-
-```
-สแกนพอร์ตเว็บเครื่อง victim-app แบบด่วน
-```
-
-```
-Full scan on victim-app with OS detection
-```
-
-```
-สแกนพอร์ต 80, 443, 8080 ของ victim-app
-```
-
-### เอกสารเพิ่มเติม
-
-ดูรายละเอียดการตั้งค่าและใช้งานใน **[WORKFLOW_GUIDE.md](./WORKFLOW_GUIDE.md)**
+| **AI-Powered Reporting** | สร้างรายงานสรุปผลการสแกน |
+| **Kali Linux Integration** | Execute commands บน Kali Container ผ่าน SSH |
+| **Multi-Target Support** | รองรับการสแกนหลายเป้าหมายพร้อมกัน |
 
 ---
 
@@ -303,31 +373,59 @@ Full scan on victim-app with OS detection
 
 ก่อนเริ่มใช้งาน ให้ตรวจสอบความพร้อมของระบบ:
 
-#### 1. ตรวจสอบ Nuclei Version
+#### 1. ตรวจสอบ Services ทั้งหมด
 
 ```bash
-docker exec -it n8n-secops nuclei -version
+docker-compose ps
+```
+
+**ผลลัพธ์ที่คาดหวัง**: ควรเห็น 7 Services ในสถานะ `Up`:
+- n8n-secops
+- victim-app
+- postgres-db
+- kali-linux
+- cloudflared-tunnel
+- juice-shop-victim
+- metasploitable-victim
+
+#### 2. ตรวจสอบ Nuclei Version (ใน Kali Container)
+
+```bash
+docker exec -it kali-linux nuclei -version
 ```
 
 **ผลลัพธ์ที่คาดหวัง**: `v3.x.x`
 
-#### 2. ตรวจสอบ Victim App Accessibility
+#### 3. ตรวจสอบ Victim Apps Accessibility
 
 ```bash
+# ทดสอบ victim-app (Nginx)
 docker exec -it n8n-secops curl http://victim-app/.env
+
+# ทดสอบ juice-shop
+docker exec -it n8n-secops curl http://juice-shop-victim:3000 -I
+
+# ทดสอบ metasploitable (ตรวจสอบว่าเปิด ports)
+docker exec -it kali-linux nmap -sn metasploitable-victim
 ```
 
-**ผลลัพธ์ที่คาดหวัง**: ควรเห็นเนื้อหาไฟล์ `.env`
-
-#### 3. ตรวจสอบ Network Connectivity
+#### 4. ตรวจสอบ Kali Linux SSH
 
 ```bash
-docker network inspect secops_secops_net
+docker exec -it kali-linux pgrep sshd
 ```
 
-**ผลลัพธ์ที่คาดหวัง**: ควรเห็น Containers ทั้งหมดเชื่อมต่ออยู่ใน Network เดียวกัน
+**ผลลัพธ์ที่คาดหวัง**: ควรเห็น Process ID ของ SSH daemon
 
-#### 4. ตรวจสอบ n8n UI
+#### 5. ตรวจสอบ Network Connectivity
+
+```bash
+docker network inspect secops_net
+```
+
+**ผลลัพธ์ที่คาดหวัง**: ควรเห็น Containers ทั้งหมด 7 ตัวเชื่อมต่ออยู่ใน Network เดียวกัน
+
+#### 6. ตรวจสอบ n8n UI
 
 เปิด Browser ไปที่ **http://localhost:5678** และ Login
 
@@ -385,13 +483,33 @@ docker-compose restart
    docker-compose restart n8n
    ```
 
+#### Kali Linux SSH เข้าไม่ได้
+
+**สาเหตุ**: SSH Service ยังไม่เริ่มทำงาน
+
+**วิธีแก้ไข**:
+```bash
+# ตรวจสอบสถานะ SSH
+docker exec kali-linux pgrep sshd
+
+# ถ้าไม่มี Process ให้ restart container
+docker-compose restart kali
+
+# หรือ start SSH ด้วยตนเอง
+docker exec kali-linux /usr/sbin/sshd -D &
+```
+
+**หมายเหตุ**: Default password สำหรับ root คือ `kali` (เปลี่ยนได้ใน `Dockerfile.kali`)
+
 #### Nuclei ไม่พบช่องโหว่
+
+**สาเหตุ**: Nuclei templates อาจไม่ได้อัปเดต หรือ target ไม่มีช่องโหว่ที่ตรวจพบ
 
 **วิธีแก้ไข**:
 
 1. **อัปเดต Templates**:
    ```bash
-   docker exec -it n8n-secops nuclei -update-templates
+   docker exec -it kali-linux nuclei -update-templates
    ```
 
 2. **ตรวจสอบว่า victim-app มีไฟล์ที่เปิดเผย**:
@@ -401,7 +519,12 @@ docker-compose restart
 
 3. **ทดสอบ Nuclei โดยตรง**:
    ```bash
-   docker exec -it n8n-secops nuclei -u http://victim-app -tags exposure -v
+   docker exec -it kali-linux nuclei -u http://victim-app -tags exposure -v
+   ```
+
+4. **ลองสแกน juice-shop**:
+   ```bash
+   docker exec -it kali-linux nuclei -u http://juice-shop-victim:3000 -v
    ```
 
 ### การตรวจสอบ Logs
@@ -418,11 +541,23 @@ docker-compose logs -f
 # n8n Logs
 docker-compose logs -f n8n
 
+# kali-linux Logs
+docker-compose logs -f kali
+
 # victim-app Logs
 docker-compose logs -f victim-app
 
+# juice-shop Logs
+docker-compose logs -f juice-shop
+
+# metasploitable Logs
+docker-compose logs -f metasploitable
+
 # postgres Logs
 docker-compose logs -f postgres
+
+# cloudflared Logs
+docker-compose logs -f cloudflared
 ```
 
 ---
@@ -443,7 +578,8 @@ docker-compose logs -f postgres
 
 ### เอกสารภายในโปรเจกต์
 
-- **[WORKFLOW_GUIDE.md](./WORKFLOW_GUIDE.md)** - คู่มือการใช้งาน Workflow อย่างละเอียด
+- **`Workflow_1/README.md`** - คู่มือการใช้งาน Advanced SecOps AI Pipeline
+- **`Workflow_2/README.md`** - คู่มือการใช้งาน WebSecScan Pro
 
 ---
 
@@ -490,7 +626,7 @@ docker-compose logs -f postgres
 สำหรับคำถามหรือความช่วยเหลือ กรุณาติดต่อผ่าน:
 
 - **Issues**: สร้าง Issue ใน Repository
-- **Documentation**: อ่านเอกสารใน `WORKFLOW_GUIDE.md`
+- **Documentation**: อ่านเอกสารใน `Workflow_1/README.md` และ `Workflow_2/README.md`
 
 ---
 

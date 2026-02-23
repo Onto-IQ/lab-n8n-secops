@@ -1,6 +1,12 @@
-# เอกสารกำกับ WebSecScan Pro 2026 (SecOps AI Pipeline)
+# Workflow 1: Advanced SecOps AI Pipeline (Kali Edition)
 
-เอกสารนี้อธิบายการทำงาน การตั้งค่า และวิธีใช้งานของระบบ **Advanced SecOps AI Pipeline** ซึ่งเป็นระบบอัตโนมัติสำหรับการสแกนความปลอดภัยทางไซเบอร์ โดยใช้ AI Agent ในการควบคุมเครื่องมือทดสอบเจาะระบบ (Kali Linux) และรายงานผลผ่าน Discord
+เอกสารนี้อธิบายการทำงาน การตั้งค่า และวิธีใช้งานของระบบ **Advanced SecOps AI Pipeline** ในโฟลเดอร์ `Workflow_1/` ซึ่งเป็นระบบอัตโนมัติสำหรับการสแกนความปลอดภัยทางไซเบอร์ โดยใช้ AI Agent ในการควบคุมเครื่องมือทดสอบเจาะระบบ (Kali Linux) และรายงานผลผ่าน Discord
+
+**ไฟล์ในโฟลเดอร์นี้:**
+- `Advanced SecOps AI Pipeline.json` - Main Workflow
+- `Kali Executor Tool.json` - Sub-workflow สำหรับ Execute คำสั่งผ่าน SSH
+
+> **หมายเหตุ**: ไฟล์รูปแบบ snake_case สำรองอยู่ใน `workflows/Advanced_SecOps_AI_Pipeline.json` และ `workflows/Kali_Executor_Tool.json`
 
 ## 1. ภาพรวมสถาปัตยกรรม (System Architecture)
 
